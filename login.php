@@ -1,6 +1,35 @@
 <?php
 session_start();
 include "db.php";
+
+$msg = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    $u = $_POST['username'];
+    $p = $_POST['password'];
+
+    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
+    $stmt->bind_param("s", $u);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($row = $result->fetch_assoc()) {
+
+        if (password_verify($p, $row['password'])) {
+
+            $_SESSION['user_id'] = $row['user_id'];
+            header("Location: menu.php");
+            exit();
+
+        } else {
+            $msg = "❌ Wrong password";
+        }
+
+    } else {
+        $msg = "❌ User not found";
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -21,7 +50,6 @@ body {
     background: linear-gradient(135deg, #ff6b6b, #feca57);
 }
 
-/* background blur image */
 body::before {
     content: "";
     position: absolute;
@@ -35,7 +63,6 @@ body::before {
     z-index: 0;
 }
 
-/* card */
 .box {
     position: relative;
     z-index: 1;
@@ -69,7 +96,6 @@ button {
     cursor: pointer;
     background: #ff4757;
     color: white;
-    transition: 0.3s;
 }
 
 button:hover {
@@ -102,6 +128,13 @@ a:hover {
 .back:hover {
     background: #1e272e;
 }
+
+/* error message */
+.msg {
+    margin-top: 10px;
+    font-size: 13px;
+    color: red;
+}
 </style>
 </head>
 
@@ -118,37 +151,11 @@ a:hover {
     </form>
 
     <a href="register.php">No account? Register</a>
-
-    <!-- ⭐ 返回首页按钮 -->
     <a class="back" href="index.php">⬅ Back to Home</a>
 
+    <?php if ($msg != "") echo "<div class='msg'>$msg</div>"; ?>
+
 </div>
-
-<?php
-if ($_POST) {
-
-    $u = $_POST['username'];
-    $p = $_POST['password'];
-
-    $result = $conn->query("SELECT * FROM users WHERE username='$u'");
-
-    if ($row = $result->fetch_assoc()) {
-
-        if (password_verify($p, $row['password'])) {
-
-            $_SESSION['user_id'] = $row['user_id'];
-            header("Location: menu.php");
-            exit();
-
-        } else {
-            echo "<p style='color:red;text-align:center;'>Wrong password</p>";
-        }
-
-    } else {
-        echo "<p style='color:red;text-align:center;'>User not found</p>";
-    }
-}
-?>
 
 </body>
 </html>
