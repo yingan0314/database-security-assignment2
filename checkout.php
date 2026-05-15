@@ -9,11 +9,12 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
+/* 🔥 关键：从 cart 读取，而不是 orders */
 $stmt = $conn->prepare("
-SELECT o.*, m.food_name
-FROM orders o
-JOIN menu m ON o.food_id = m.food_id
-WHERE o.user_id = ?
+SELECT c.*, m.food_name, m.price
+FROM cart c
+JOIN menu m ON c.food_id = m.food_id
+WHERE c.user_id = ?
 ");
 
 $stmt->bind_param("i", $user_id);
@@ -30,7 +31,6 @@ $total = 0;
 <title>Payment</title>
 
 <style>
-
 body{
     font-family: Arial;
     background:#f4f4f4;
@@ -101,7 +101,6 @@ button{
 button:hover{
     background:#ff3748;
 }
-
 </style>
 </head>
 
@@ -111,9 +110,14 @@ button:hover{
 
 <h1>💳 Payment</h1>
 
+<?php if ($result->num_rows == 0) { ?>
+    <p>Your cart is empty.</p>
+<?php } else { ?>
+
 <?php while($row = $result->fetch_assoc()) {
 
-    $subtotal = $row['total_price'];
+    /* 🔥 correct subtotal calculation */
+    $subtotal = $row['price'] * $row['quantity'];
     $total += $subtotal;
 ?>
 
@@ -137,12 +141,15 @@ button:hover{
     Total: RM <?php echo number_format($total,2); ?>
 </div>
 
+<?php } ?>
+
 <div class="payment-box">
 
 <form action="place_order.php" method="POST">
 
-    <label>Payment Method</label>
+    <input type="hidden" name="total_amount" value="<?php echo $total; ?>">
 
+    <label>Payment Method</label>
     <select name="payment_method" required>
         <option value="">-- Select Payment Method --</option>
         <option value="Credit Card">Credit Card</option>
@@ -160,9 +167,7 @@ button:hover{
     <label>CVV</label>
     <input type="password" name="cvv" placeholder="123" required>
 
-    <button type="submit">
-        Pay Now
-    </button>
+    <button type="submit">Pay Now</button>
 
 </form>
 
