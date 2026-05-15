@@ -30,122 +30,143 @@ $total = 0;
 <title>My Cart</title>
 
 <style>
-body {
-    margin: 0;
-    font-family: "Segoe UI", Arial;
-    background: linear-gradient(to right, #f4f4f4, #e9f5ff);
+body{
+    margin:0;
+    font-family:Segoe UI,Arial;
+    background:#f5f6fa;
 }
 
-/* top bar */
-.topbar {
-    background: #ff4757;
-    color: white;
-    padding: 18px;
-    display: flex;
-    justify-content: space-between;
-    font-size: 18px;
+/* topbar */
+.topbar{
+    background:#ff4757;
+    color:white;
+    padding:15px 20px;
+    display:flex;
+    justify-content:space-between;
+    font-weight:bold;
 }
 
-/* container */
-.container {
-    padding: 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+.topbar a{
+    color:white;
+    text-decoration:none;
+    margin-left:10px;
 }
 
-/* BIG CARD */
-.card {
-    width: 850px;
-    background: white;
-    margin: 15px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
-    transition: 0.3s;
+/* layout */
+.container{
+    width:900px;
+    margin:auto;
+    padding:20px;
 }
 
-.card:hover {
-    transform: scale(1.02);
+/* CART ITEM */
+.card{
+    display:flex;
+    align-items:center;
+    background:white;
+    margin:15px 0;
+    border-radius:16px;
+    box-shadow:0 6px 15px rgba(0,0,0,0.08);
+    overflow:hidden;
+    transition:0.2s;
 }
 
-/* image bigger */
-.card img {
-    width: 130px;
-    height: 130px;
-    object-fit: cover;
-    border-radius: 15px;
-    margin-right: 20px;
+.card:hover{
+    transform:scale(1.01);
 }
 
-/* info */
-.info {
-    flex: 1;
+/* image bigger nicer */
+.card img{
+    width:140px;
+    height:110px;
+    object-fit:cover;
 }
 
-.name {
-    font-size: 22px;
-    font-weight: bold;
+/* middle content */
+.info{
+    flex:1;
+    padding:10px 15px;
 }
 
-.qty {
-    font-size: 14px;
-    color: #666;
-    margin-top: 5px;
+.name{
+    font-size:18px;
+    font-weight:600;
 }
 
-.price {
-    font-size: 20px;
-    font-weight: bold;
-    color: #ff4757;
+.qty{
+    font-size:13px;
+    color:#777;
+    margin-top:4px;
 }
 
-/* buttons */
-.btn {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: bold;
+/* price side */
+.price{
+    width:120px;
+    text-align:center;
+    font-size:18px;
+    font-weight:bold;
+    color:#ff4757;
 }
 
-.delete {
-    background: #ff6b6b;
-    color: white;
+/* delete button clean */
+form{
+    margin-right:15px;
 }
 
-.delete:hover {
-    background: #e84141;
+button{
+    background:#fff0f0;
+    border:1px solid #ff6b6b;
+    color:#ff6b6b;
+    padding:8px 10px;
+    border-radius:10px;
+    cursor:pointer;
+    font-weight:bold;
 }
 
-/* checkout box */
-.checkout {
-    width: 850px;
-    background: linear-gradient(135deg, #2ed573, #1eae60);
-    color: white;
-    padding: 20px;
-    border-radius: 20px;
-    text-align: center;
-    margin-top: 20px;
+button:hover{
+    background:#ff6b6b;
+    color:white;
 }
 
-.checkout button {
-    margin-top: 10px;
-    padding: 12px 25px;
-    border: none;
-    border-radius: 12px;
-    background: white;
-    color: #1eae60;
-    font-weight: bold;
-    cursor: pointer;
+/* EMPTY */
+.empty{
+    text-align:center;
+    margin-top:80px;
+    color:#888;
+    font-size:18px;
 }
 
-.empty {
-    margin-top: 60px;
-    font-size: 20px;
-    color: #666;
+/* CHECKOUT FIXED STYLE */
+.checkout{
+    margin-top:25px;
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 6px 15px rgba(0,0,0,0.08);
+    text-align:center;
+}
+
+.total{
+    font-size:22px;
+    font-weight:bold;
+    color:#2ed573;
+}
+
+.checkout button{
+    margin-top:12px;
+    width:100%;
+    padding:12px;
+    border:none;
+    border-radius:12px;
+    background:#2ed573;
+    color:white;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.checkout button:hover{
+    background:#1eae60;
 }
 </style>
 
@@ -156,8 +177,8 @@ body {
 <div class="topbar">
     <div>🛒 My Cart</div>
     <div>
-        <a href="menu.php" style="color:white;">Menu</a> |
-        <a href="logout.php" style="color:white;">Logout</a>
+        <a href="menu.php">Menu</a>
+        <a href="logout.php">Logout</a>
     </div>
 </div>
 
@@ -183,14 +204,14 @@ while ($row = $result->fetch_assoc()) {
         <div class="qty">Quantity: <?php echo $row['quantity']; ?></div>
     </div>
 
+    <form method="POST" action="remove_cart.php">
+        <input type="hidden" name="cart_id" value="<?php echo $row['cart_id']; ?>">
+        <button>Remove</button>
+    </form>
+
     <div class="price">
         RM <?php echo number_format($subtotal,2); ?>
     </div>
-
-    <form method="POST" action="remove_cart.php">
-        <input type="hidden" name="cart_id" value="<?php echo $row['id']; ?>">
-        <button class="btn delete">Delete</button>
-    </form>
 
 </div>
 
@@ -198,7 +219,7 @@ while ($row = $result->fetch_assoc()) {
 
 <?php if ($result->num_rows > 0) { ?>
 <div class="checkout">
-    TOTAL: RM <?php echo number_format($total,2); ?>
+    <div class="total">TOTAL: RM <?php echo number_format($total,2); ?></div>
 
     <form method="POST" action="checkout.php">
         <button>Checkout 💳</button>

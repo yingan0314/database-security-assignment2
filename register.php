@@ -1,5 +1,44 @@
 <?php
 include "db.php";
+
+$msg = "";
+
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+
+    $u = trim($_POST['username']);
+    $p1 = $_POST['password'];
+    $p2 = $_POST['confirm_password'];
+
+    // 1. password check
+    if ($p1 !== $p2) {
+        $msg = "❌ Passwords do not match!";
+    } else {
+
+        // 2. check username exist
+        $check = $conn->prepare("SELECT user_id FROM users WHERE username = ?");
+        $check->bind_param("s", $u);
+        $check->execute();
+        $check->store_result();
+
+        if ($check->num_rows > 0) {
+            $msg = "❌ Username already taken!";
+        } else {
+
+            // 3. insert user
+            $hash = password_hash($p1, PASSWORD_DEFAULT);
+
+            $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
+            $stmt->bind_param("ss", $u, $hash);
+            $stmt->execute();
+
+            // 4. redirect login
+            header("Location: login.php");
+            exit();
+        }
+
+        $check->close();
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -105,7 +144,7 @@ a:hover {
 .msg {
     margin-top: 10px;
     font-size: 13px;
-    color: green;
+    color: red;
 }
 </style>
 </head>
@@ -118,29 +157,18 @@ a:hover {
 
     <form method="POST">
         <input name="username" placeholder="Username" required>
+
         <input name="password" type="password" placeholder="Password" required>
+
+        <input name="confirm_password" type="password" placeholder="Confirm Password" required>
+
         <button type="submit">Register</button>
     </form>
 
     <a href="login.php">Already have account? Login</a>
-
-    <!-- ⭐ Back button -->
     <a class="back" href="index.php">⬅ Back to Home</a>
 
-<?php
-if ($_POST) {
-
-    $u = $_POST['username'];
-    $p = password_hash($_POST['password'], PASSWORD_DEFAULT);
-
-    // ⚠️ better version (safer)
-    $stmt = $conn->prepare("INSERT INTO users (username,password) VALUES (?,?)");
-    $stmt->bind_param("ss", $u, $p);
-    $stmt->execute();
-
-    echo "<div class='msg'>Registered successfully!</div>";
-}
-?>
+    <?php if ($msg != "") echo "<div class='msg'>$msg</div>"; ?>
 
 </div>
 
