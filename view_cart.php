@@ -9,7 +9,6 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-/* SQL Server query */
 $sql = "
 SELECT c.*, m.food_name, m.image, m.price
 FROM cart c
@@ -17,9 +16,7 @@ JOIN menu m ON c.food_id = m.food_id
 WHERE c.user_id = ?
 ";
 
-$params = [$user_id];
-
-$stmt = sqlsrv_query($conn, $sql, $params);
+$stmt = sqlsrv_query($conn, $sql, [$user_id]);
 
 if ($stmt === false) {
     die(print_r(sqlsrv_errors(), true));
@@ -36,13 +33,8 @@ $hasData = false;
 <title>My Cart</title>
 
 <style>
-/* keep ALL your CSS unchanged */
-body{
-    margin:0;
-    font-family:Segoe UI,Arial;
-    background:#f5f6fa;
-}
 
+/* ================= TOPBAR (KEEP) ================= */
 .topbar{
     background:#ff4757;
     color:white;
@@ -58,106 +50,158 @@ body{
     margin-left:10px;
 }
 
-.container{
-    width:900px;
-    margin:auto;
-    padding:20px;
+/* ================= BACKGROUND ================= */
+body{
+    margin:0;
+    font-family:'Segoe UI', Arial;
+    background:#f6f7fb;
 }
 
+/* ================= LAYOUT ================= */
+.container{
+    width:1050px;
+    margin:30px auto;
+    display:flex;
+    gap:25px;
+}
+
+/* LEFT */
+.cart-list{
+    flex:2;
+}
+
+/* RIGHT */
+.summary{
+    flex:1;
+    position:sticky;
+    top:20px;
+    height:fit-content;
+}
+
+/* ================= CART CARD ================= */
 .card{
     display:flex;
     align-items:center;
     background:white;
-    margin:15px 0;
-    border-radius:16px;
-    box-shadow:0 6px 15px rgba(0,0,0,0.08);
+    margin-bottom:14px;
+    border-radius:20px;
     overflow:hidden;
+    box-shadow:0 6px 18px rgba(0,0,0,0.06);
+    transition:0.25s;
+}
+
+.card:hover{
+    transform:translateY(-4px);
+    box-shadow:0 12px 30px rgba(0,0,0,0.12);
 }
 
 .card img{
-    width:140px;
-    height:110px;
+    width:135px;
+    height:105px;
     object-fit:cover;
 }
 
+/* TEXT AREA */
 .info{
     flex:1;
-    padding:10px 15px;
+    padding:14px 16px;
 }
 
 .name{
-    font-size:18px;
-    font-weight:600;
+    font-size:17px;
+    font-weight:800;
+    color:#222;
 }
 
 .qty{
-    font-size:13px;
-    color:#777;
     margin-top:4px;
+    font-size:13px;
+    color:#888;
 }
 
+/* PRICE */
 .price{
-    width:120px;
+    width:110px;
     text-align:center;
-    font-size:18px;
-    font-weight:bold;
+    font-size:16px;
+    font-weight:800;
     color:#ff4757;
 }
 
-form{
-    margin-right:15px;
-}
-
+/* REMOVE */
 button{
-    background:#fff0f0;
-    border:1px solid #ff6b6b;
-    color:#ff6b6b;
-    padding:8px 10px;
-    border-radius:10px;
+    margin-right:12px;
+    background:transparent;
+    border:1.8px solid #ff4757;
+    color:#ff4757;
+    padding:7px 11px;
+    border-radius:12px;
+    font-weight:700;
     cursor:pointer;
-    font-weight:bold;
+    transition:0.2s;
 }
 
 button:hover{
-    background:#ff6b6b;
+    background:#ff4757;
     color:white;
 }
 
+/* ================= SUMMARY (MODERN CARD) ================= */
+.summary-box{
+    background:white;
+    border-radius:22px;
+    padding:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.08);
+}
+
+.summary-title{
+    font-size:18px;
+    font-weight:800;
+    margin-bottom:10px;
+}
+
+.subtext{
+    font-size:13px;
+    color:#888;
+    margin-bottom:20px;
+}
+
+/* TOTAL BIG VISUAL */
+.total{
+    font-size:28px;
+    font-weight:900;
+    color:#2ed573;
+    margin:15px 0;
+}
+
+/* CTA BUTTON */
+.checkout-btn{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:16px;
+    background:linear-gradient(135deg,#ff4757,#ff6b81);
+    color:white;
+    font-size:15px;
+    font-weight:900;
+    cursor:pointer;
+    transition:0.2s;
+    box-shadow:0 8px 18px rgba(255,71,87,0.3);
+}
+
+.checkout-btn:hover{
+    transform:scale(1.02);
+}
+
+/* EMPTY */
 .empty{
     text-align:center;
-    margin-top:80px;
-    color:#888;
+    margin-top:90px;
+    color:#aaa;
     font-size:18px;
 }
 
-.checkout{
-    margin-top:25px;
-    background:white;
-    padding:20px;
-    border-radius:16px;
-    box-shadow:0 6px 15px rgba(0,0,0,0.08);
-    text-align:center;
-}
-
-.total{
-    font-size:22px;
-    font-weight:bold;
-    color:#2ed573;
-}
-
-.checkout button{
-    margin-top:12px;
-    width:100%;
-    padding:12px;
-    border:none;
-    border-radius:12px;
-    background:#2ed573;
-    color:white;
-    font-size:16px;
-    font-weight:bold;
-}
 </style>
-
 </head>
 
 <body>
@@ -171,6 +215,9 @@ button:hover{
 </div>
 
 <div class="container">
+
+<!-- LEFT -->
+<div class="cart-list">
 
 <?php
 while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
@@ -205,16 +252,30 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 
 <?php if (!$hasData) { ?>
     <div class="empty">Your cart is empty 🛒</div>
-<?php } else { ?>
+<?php } ?>
 
-<div class="checkout">
-    <div class="total">TOTAL: RM <?php echo number_format($total,2); ?></div>
-
-    <form method="POST" action="checkout.php">
-        <button>Checkout 💳</button>
-    </form>
 </div>
 
+<!-- RIGHT -->
+<?php if ($hasData) { ?>
+<div class="summary">
+
+    <div class="summary-box">
+
+        <div class="summary-title">Order Summary</div>
+        <div class="subtext">Almost there — review before payment</div>
+
+        <div class="total">
+            RM <?php echo number_format($total,2); ?>
+        </div>
+
+        <form method="POST" action="checkout.php">
+            <button class="checkout-btn">Checkout Now 💳</button>
+        </form>
+
+    </div>
+
+</div>
 <?php } ?>
 
 </div>
