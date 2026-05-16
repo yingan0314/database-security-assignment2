@@ -1,6 +1,6 @@
 <?php
 
-$serverName = "192.168.0.230";
+$serverName = "192.168.0.146";
 $database = "food_ordering";
 $username = "sa";   // 或 sa
 $password = 'Pa$$w0rd';    // 改成你的

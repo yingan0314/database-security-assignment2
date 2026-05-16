@@ -10,45 +10,69 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = $_SESSION['user_id'];
 
 /* =========================================================
-   1. INPUT
+   INPUT
 ========================================================= */
 $card_number = $_POST['card_number'];
 $card_holder = $_POST['card_holder'];
+$card_type = $_POST['card_type'];
 $expiry = $_POST['expiry'];
+$cvv = $_POST['cvv'];
 
-$clean = str_replace(' ', '', $card_number);
-$last4 = substr($clean, -4);
-$masked = "**** **** **** " . $last4;
+/* =========================================================
+   VALIDATION
+========================================================= */
+$clean = preg_replace('/\s+/', '', $card_number);
+
+if (!ctype_digit($clean)) {
+    die("Invalid card number");
+}
+
+if (!preg_match('/^[0-9]{3,4}$/', $cvv)) {
+    die("Invalid CVV");
+}
+
+if (!str_contains($expiry, '/')) {
+    die("Invalid expiry format");
+}
 
 list($month, $year) = explode('/', $expiry);
 
+if ($month < 1 || $month > 12) {
+    die("Invalid expiry month");
+}
+
+$last4 = substr($clean, -4);
+
 /* =========================================================
-   2. START TRANSACTION (IMPORTANT)
+   TRANSACTION START
 ========================================================= */
 sqlsrv_begin_transaction($conn);
 
 try {
 
-    /* =====================================================
-       3. SAVE CARD
-    ===================================================== */
+    /* SAVE CARD */
     $sql1 = "
     INSERT INTO user_cards 
-    (user_id, card_holder, card_last4, card_masked, expiry_month, expiry_year)
+    (CustomerID, CardType, CardNumber, CardLast4, ExpMonth, ExpYear)
     VALUES (?, ?, ?, ?, ?, ?)
     ";
 
-    $params1 = [$user_id, $card_holder, $last4, $masked, $month, $year];
+    $params1 = [
+        $user_id,
+        $card_type,
+        $clean,
+        $last4,
+        $month,
+        $year
+    ];
 
     $stmt1 = sqlsrv_query($conn, $sql1, $params1);
 
     if ($stmt1 === false) {
-        throw new Exception("Card insert failed");
+        throw new Exception(print_r(sqlsrv_errors(), true));
     }
 
-    /* =====================================================
-       4. GET CART ITEMS
-    ===================================================== */
+    /* CART ITEMS */
     $sql2 = "
     SELECT c.food_id, c.quantity, m.price
     FROM cart c
@@ -62,9 +86,7 @@ try {
         throw new Exception("Cart fetch failed");
     }
 
-    /* =====================================================
-       5. INSERT ORDERS
-    ===================================================== */
+    /* ORDERS */
     while ($row = sqlsrv_fetch_array($stmt2, SQLSRV_FETCH_ASSOC)) {
 
         $food_id = $row['food_id'];
@@ -78,37 +100,25 @@ try {
         VALUES (?, ?, ?, ?, GETDATE(), 'PAID')
         ";
 
-        $params3 = [$user_id, $food_id, $quantity, $total_price];
-
-        $stmt3 = sqlsrv_query($conn, $sql3, $params3);
-
-        if ($stmt3 === false) {
-            throw new Exception("Order insert failed");
-        }
+        sqlsrv_query($conn, $sql3, [
+            $user_id,
+            $food_id,
+            $quantity,
+            $total_price
+        ]);
     }
 
-    /* =====================================================
-       6. CLEAR CART
-    ===================================================== */
+    /* CLEAR CART */
     $sql4 = "DELETE FROM cart WHERE user_id = ?";
-    $stmt4 = sqlsrv_query($conn, $sql4, [$user_id]);
+    sqlsrv_query($conn, $sql4, [$user_id]);
 
-    if ($stmt4 === false) {
-        throw new Exception("Cart delete failed");
-    }
-
-    /* =====================================================
-       7. COMMIT
-    ===================================================== */
     sqlsrv_commit($conn);
 
 } catch (Exception $e) {
 
     sqlsrv_rollback($conn);
-
     die("❌ Payment failed: " . $e->getMessage());
 }
-
 ?>
 
 <!DOCTYPE html>
@@ -139,12 +149,10 @@ body{
 
 h1{
     color:#2ed573;
-    margin-bottom:10px;
 }
 
 p{
     color:#555;
-    margin-bottom:20px;
 }
 
 .loading{
@@ -170,11 +178,6 @@ p{
     color:white;
     text-decoration:none;
     border-radius:10px;
-    font-weight:bold;
-}
-
-.btn:hover{
-    background:#1e272e;
 }
 </style>
 
