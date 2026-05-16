@@ -9,17 +9,21 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-/* 🔥 关键：从 cart 读取，而不是 orders */
-$stmt = $conn->prepare("
+/* SQL Server query */
+$sql = "
 SELECT c.*, m.food_name, m.price
 FROM cart c
 JOIN menu m ON c.food_id = m.food_id
 WHERE c.user_id = ?
-");
+";
 
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$params = [$user_id];
+
+$stmt = sqlsrv_query($conn, $sql, $params);
+
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
 
 $total = 0;
 ?>
@@ -46,11 +50,6 @@ body{
     box-shadow:0 10px 20px rgba(0,0,0,0.1);
 }
 
-h1{
-    margin-bottom:25px;
-    color:#333;
-}
-
 .item{
     display:flex;
     justify-content:space-between;
@@ -70,20 +69,12 @@ h1{
     margin-top:35px;
 }
 
-label{
-    font-weight:bold;
-    display:block;
-    margin-top:15px;
-    margin-bottom:8px;
-}
-
 input, select{
     width:100%;
     padding:12px;
+    margin-top:10px;
     border:1px solid #ccc;
     border-radius:10px;
-    font-size:15px;
-    box-sizing:border-box;
 }
 
 button{
@@ -97,10 +88,6 @@ button{
     cursor:pointer;
     margin-top:30px;
 }
-
-button:hover{
-    background:#ff3748;
-}
 </style>
 </head>
 
@@ -110,13 +97,12 @@ button:hover{
 
 <h1>💳 Payment</h1>
 
-<?php if ($result->num_rows == 0) { ?>
-    <p>Your cart is empty.</p>
-<?php } else { ?>
+<?php
+$hasData = false;
 
-<?php while($row = $result->fetch_assoc()) {
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    $hasData = true;
 
-    /* 🔥 correct subtotal calculation */
     $subtotal = $row['price'] * $row['quantity'];
     $total += $subtotal;
 ?>
@@ -137,6 +123,10 @@ button:hover{
 
 <?php } ?>
 
+<?php if (!$hasData) { ?>
+    <p>Your cart is empty.</p>
+<?php } else { ?>
+
 <div class="total">
     Total: RM <?php echo number_format($total,2); ?>
 </div>
@@ -156,16 +146,16 @@ button:hover{
     </select>
 
     <label>Card Number</label>
-    <input type="text" name="card_number" placeholder="1234 5678 9012 3456" required>
+    <input type="text" name="card_number" required>
 
     <label>Card Holder Name</label>
-    <input type="text" name="card_holder" placeholder="John Doe" required>
+    <input type="text" name="card_holder" required>
 
     <label>Expiry Date</label>
-    <input type="text" name="expiry" placeholder="MM/YY" required>
+    <input type="text" name="expiry" required>
 
     <label>CVV</label>
-    <input type="password" name="cvv" placeholder="123" required>
+    <input type="password" name="cvv" required>
 
     <button type="submit">Pay Now</button>
 

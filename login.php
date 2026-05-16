@@ -9,18 +9,32 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $u = $_POST['username'];
     $p = $_POST['password'];
 
-    $stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-    $stmt->bind_param("s", $u);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // SQL Server query (NO prepare / bind_param)
+    $sql = "SELECT * FROM users WHERE username = ?";
+    $params = [$u];
 
-    if ($row = $result->fetch_assoc()) {
+    $stmt = sqlsrv_query($conn, $sql, $params);
 
+    if ($stmt === false) {
+        die(print_r(sqlsrv_errors(), true));
+    }
+
+    if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+
+        // verify hashed password
         if (password_verify($p, $row['password'])) {
 
             $_SESSION['user_id'] = $row['user_id'];
-            header("Location: menu.php");
-            exit();
+            $_SESSION['role'] = $row['role'];
+
+            // role redirect
+            if ($row['role'] == "admin") {
+                header("Location: admin.php");
+                exit();
+            } else {
+                header("Location: menu.php");
+                exit();
+            }
 
         } else {
             $msg = "❌ Wrong password";
@@ -74,11 +88,6 @@ body::before {
     text-align: center;
 }
 
-h2 {
-    margin-bottom: 20px;
-    color: #333;
-}
-
 input {
     width: 100%;
     padding: 10px;
@@ -98,38 +107,6 @@ button {
     color: white;
 }
 
-button:hover {
-    background: #e84118;
-}
-
-a {
-    display: block;
-    margin-top: 10px;
-    text-decoration: none;
-    color: #555;
-    font-size: 13px;
-}
-
-a:hover {
-    color: #ff4757;
-}
-
-.back {
-    margin-top: 15px;
-    display: inline-block;
-    padding: 10px;
-    border-radius: 8px;
-    background: #2f3542;
-    color: white;
-    text-decoration: none;
-    font-size: 13px;
-}
-
-.back:hover {
-    background: #1e272e;
-}
-
-/* error message */
 .msg {
     margin-top: 10px;
     font-size: 13px;

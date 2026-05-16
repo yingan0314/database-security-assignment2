@@ -55,22 +55,13 @@ body {
     color: #333;
     background: white;
     box-shadow: 0 3px 8px rgba(0,0,0,0.1);
-    transition: 0.3s;
 }
 
-/* ⭐ active category */
 .filter a.active {
     background: #ff4757;
     color: white;
 }
 
-/* hover */
-.filter a:hover {
-    background: #ff4757;
-    color: white;
-}
-
-/* container */
 .container {
     display: flex;
     flex-wrap: wrap;
@@ -78,7 +69,6 @@ body {
     padding: 10px;
 }
 
-/* card */
 .card {
     width: 250px;
     background: white;
@@ -86,11 +76,6 @@ body {
     border-radius: 15px;
     overflow: hidden;
     box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    transition: 0.3s;
-}
-
-.card:hover {
-    transform: translateY(-5px);
 }
 
 .card img {
@@ -121,7 +106,7 @@ body {
 }
 
 input {
-    width: 50px;
+    width: 60px;
     padding: 5px;
     margin-bottom: 8px;
 }
@@ -134,20 +119,17 @@ button {
     color: white;
     font-weight: bold;
     border-radius: 8px;
-    cursor: pointer;
 }
 
 button:hover {
     background: #1eae60;
 }
 
-/* no result */
 .empty {
     text-align: center;
     margin-top: 50px;
     color: #666;
 }
-
 </style>
 </head>
 
@@ -161,7 +143,6 @@ button:hover {
     </div>
 </div>
 
-<!-- FILTER -->
 <div class="filter">
     <a class="<?php if($category=='all') echo 'active'; ?>" href="menu.php?category=all">All</a>
     <a class="<?php if($category=='rice') echo 'active'; ?>" href="menu.php?category=rice">Rice</a>
@@ -173,22 +154,26 @@ button:hover {
 <div class="container">
 
 <?php
-// SQL
+
+// SQL Server query
 if ($category == 'all') {
-    $stmt = $conn->prepare("SELECT * FROM menu");
+    $sql = "SELECT * FROM menu";
+    $params = [];
 } else {
-    $stmt = $conn->prepare("SELECT * FROM menu WHERE category = ?");
-    $stmt->bind_param("s", $category);
+    $sql = "SELECT * FROM menu WHERE category = ?";
+    $params = [$category];
 }
 
-$stmt->execute();
-$result = $stmt->get_result();
+$stmt = sqlsrv_query($conn, $sql, $params);
 
-if ($result->num_rows == 0) {
-    echo "<div class='empty'>No food found 🍽️</div>";
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
 }
 
-while ($row = $result->fetch_assoc()) {
+$hasData = false;
+
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+    $hasData = true;
 ?>
 
 <div class="card">
@@ -217,6 +202,12 @@ while ($row = $result->fetch_assoc()) {
 </div>
 
 <?php } ?>
+
+<?php
+if (!$hasData) {
+    echo "<div class='empty'>No food found 🍽️</div>";
+}
+?>
 
 </div>
 

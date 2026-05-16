@@ -14,36 +14,41 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $msg = "❌ Passwords do not match!";
     } else {
 
-        // 2. check username exist
-        $check = $conn->prepare("SELECT user_id FROM users WHERE username = ?");
-        $check->bind_param("s", $u);
-        $check->execute();
-        $check->store_result();
+        // 2. check username exist (SQL Server way)
+        $sql = "SELECT user_id FROM users WHERE username = ?";
+        $params = [$u];
 
-        if ($check->num_rows > 0) {
+        $check = sqlsrv_query($conn, $sql, $params);
+
+        if ($check === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        if (sqlsrv_fetch_array($check, SQLSRV_FETCH_ASSOC)) {
             $msg = "❌ Username already taken!";
         } else {
 
-            // 3. insert user
+            // 3. insert user (hashed password)
             $hash = password_hash($p1, PASSWORD_DEFAULT);
 
-            $stmt = $conn->prepare("INSERT INTO users (username, password) VALUES (?, ?)");
-            $stmt->bind_param("ss", $u, $hash);
-            $stmt->execute();
+            $sql = "INSERT INTO users (username, password, role) VALUES (?, ?, 'customer')";
+            $params = [$u, $hash];
 
-            // 4. redirect login
+            $stmt = sqlsrv_query($conn, $sql, $params);
+
+            if ($stmt === false) {
+                die(print_r(sqlsrv_errors(), true));
+            }
+
             header("Location: login.php");
             exit();
         }
-
-        $check->close();
     }
 }
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
 <meta charset="UTF-8">
 <title>Register</title>
@@ -59,7 +64,6 @@ body {
     background: linear-gradient(135deg, #ff6b6b, #feca57);
 }
 
-/* background image blur */
 body::before {
     content: "";
     position: absolute;
@@ -73,7 +77,6 @@ body::before {
     z-index: 0;
 }
 
-/* card */
 .box {
     position: relative;
     z-index: 1;
@@ -83,11 +86,6 @@ body::before {
     background: white;
     box-shadow: 0 20px 40px rgba(0,0,0,0.25);
     text-align: center;
-}
-
-h2 {
-    margin-bottom: 20px;
-    color: #333;
 }
 
 input {
@@ -107,44 +105,12 @@ button {
     cursor: pointer;
     background: #2ed573;
     color: white;
-    transition: 0.3s;
-}
-
-button:hover {
-    background: #1eae60;
-}
-
-a {
-    display: block;
-    margin-top: 10px;
-    text-decoration: none;
-    color: #555;
-    font-size: 13px;
-}
-
-a:hover {
-    color: #2ed573;
-}
-
-.back {
-    margin-top: 15px;
-    display: inline-block;
-    padding: 10px;
-    border-radius: 8px;
-    background: #2f3542;
-    color: white;
-    text-decoration: none;
-    font-size: 13px;
-}
-
-.back:hover {
-    background: #1e272e;
 }
 
 .msg {
     margin-top: 10px;
-    font-size: 13px;
     color: red;
+    font-size: 13px;
 }
 </style>
 </head>
@@ -157,16 +123,10 @@ a:hover {
 
     <form method="POST">
         <input name="username" placeholder="Username" required>
-
         <input name="password" type="password" placeholder="Password" required>
-
         <input name="confirm_password" type="password" placeholder="Confirm Password" required>
-
         <button type="submit">Register</button>
     </form>
-
-    <a href="login.php">Already have account? Login</a>
-    <a class="back" href="index.php">⬅ Back to Home</a>
 
     <?php if ($msg != "") echo "<div class='msg'>$msg</div>"; ?>
 

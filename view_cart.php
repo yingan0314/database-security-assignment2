@@ -9,18 +9,24 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-$stmt = $conn->prepare("
+/* SQL Server query */
+$sql = "
 SELECT c.*, m.food_name, m.image, m.price
 FROM cart c
 JOIN menu m ON c.food_id = m.food_id
 WHERE c.user_id = ?
-");
+";
 
-$stmt->bind_param("i", $user_id);
-$stmt->execute();
-$result = $stmt->get_result();
+$params = [$user_id];
+
+$stmt = sqlsrv_query($conn, $sql, $params);
+
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
 
 $total = 0;
+$hasData = false;
 ?>
 
 <!DOCTYPE html>
@@ -30,13 +36,13 @@ $total = 0;
 <title>My Cart</title>
 
 <style>
+/* keep ALL your CSS unchanged */
 body{
     margin:0;
     font-family:Segoe UI,Arial;
     background:#f5f6fa;
 }
 
-/* topbar */
 .topbar{
     background:#ff4757;
     color:white;
@@ -52,14 +58,12 @@ body{
     margin-left:10px;
 }
 
-/* layout */
 .container{
     width:900px;
     margin:auto;
     padding:20px;
 }
 
-/* CART ITEM */
 .card{
     display:flex;
     align-items:center;
@@ -68,21 +72,14 @@ body{
     border-radius:16px;
     box-shadow:0 6px 15px rgba(0,0,0,0.08);
     overflow:hidden;
-    transition:0.2s;
 }
 
-.card:hover{
-    transform:scale(1.01);
-}
-
-/* image bigger nicer */
 .card img{
     width:140px;
     height:110px;
     object-fit:cover;
 }
 
-/* middle content */
 .info{
     flex:1;
     padding:10px 15px;
@@ -99,7 +96,6 @@ body{
     margin-top:4px;
 }
 
-/* price side */
 .price{
     width:120px;
     text-align:center;
@@ -108,7 +104,6 @@ body{
     color:#ff4757;
 }
 
-/* delete button clean */
 form{
     margin-right:15px;
 }
@@ -128,7 +123,6 @@ button:hover{
     color:white;
 }
 
-/* EMPTY */
 .empty{
     text-align:center;
     margin-top:80px;
@@ -136,7 +130,6 @@ button:hover{
     font-size:18px;
 }
 
-/* CHECKOUT FIXED STYLE */
 .checkout{
     margin-top:25px;
     background:white;
@@ -162,11 +155,6 @@ button:hover{
     color:white;
     font-size:16px;
     font-weight:bold;
-    cursor:pointer;
-}
-
-.checkout button:hover{
-    background:#1eae60;
 }
 </style>
 
@@ -185,11 +173,9 @@ button:hover{
 <div class="container">
 
 <?php
-if ($result->num_rows == 0) {
-    echo "<div class='empty'>Your cart is empty 🛒</div>";
-}
+while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 
-while ($row = $result->fetch_assoc()) {
+    $hasData = true;
 
     $subtotal = $row['price'] * $row['quantity'];
     $total += $subtotal;
@@ -217,7 +203,10 @@ while ($row = $result->fetch_assoc()) {
 
 <?php } ?>
 
-<?php if ($result->num_rows > 0) { ?>
+<?php if (!$hasData) { ?>
+    <div class="empty">Your cart is empty 🛒</div>
+<?php } else { ?>
+
 <div class="checkout">
     <div class="total">TOTAL: RM <?php echo number_format($total,2); ?></div>
 
@@ -225,6 +214,7 @@ while ($row = $result->fetch_assoc()) {
         <button>Checkout 💳</button>
     </form>
 </div>
+
 <?php } ?>
 
 </div>

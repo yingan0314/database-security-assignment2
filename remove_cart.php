@@ -2,12 +2,31 @@
 session_start();
 include "db.php";
 
+/* 1️⃣ check login */
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+/* 2️⃣ validate input */
+if (!isset($_POST['cart_id'])) {
+    header("Location: cart.php");
+    exit();
+}
+
 $cart_id = $_POST['cart_id'];
 
-$stmt = $conn->prepare("DELETE FROM cart WHERE cart_id = ?");
-$stmt->bind_param("i", $cart_id);
-$stmt->execute();
+/* 3️⃣ SQL Server delete */
+$sql = "DELETE FROM cart WHERE cart_id = ?";
+$params = [$cart_id];
 
-header("Location: view_cart.php");
+$stmt = sqlsrv_query($conn, $sql, $params);
+
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+
+/* 4️⃣ redirect back */
+header("Location: cart.php");
 exit();
 ?>
