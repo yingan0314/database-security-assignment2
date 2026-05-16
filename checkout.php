@@ -134,14 +134,12 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 
     <input type="hidden" name="total_amount" value="<?php echo $total; ?>">
 
-    <!-- PAYMENT METHOD -->
     <label>Payment Method</label>
     <select name="payment_method" required>
         <option value="">-- Select Payment Method --</option>
         <option value="Credit Card">Credit Card</option>
     </select>
 
-    <!-- CARD TYPE (FIXED) -->
     <label>Card Type</label>
     <select name="card_type" required>
         <option value="">-- Select Card Type --</option>
@@ -150,22 +148,18 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
         <option value="AMEX">AMEX</option>
     </select>
 
-    <!-- CARD NUMBER -->
     <label>Card Number</label>
     <input type="text" name="card_number" id="card_number"
         placeholder="1234 5678 9012 3456"
         maxlength="19" required>
 
-    <!-- CARD HOLDER -->
     <label>Card Holder Name</label>
     <input type="text" name="card_holder" id="card_holder" required>
 
-    <!-- EXPIRY -->
     <label>Expiry Date</label>
     <input type="text" name="expiry" id="expiry"
         placeholder="MM/YYYY" maxlength="7" required>
 
-    <!-- CVV -->
     <label>CVV</label>
     <input type="password" name="cvv" id="cvv"
         maxlength="3" required>
@@ -178,14 +172,15 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 
 </div>
 
-<!-- JS VALIDATION -->
 <script>
 
+// format card number
 document.getElementById("card_number").addEventListener("input", function (e) {
     let value = e.target.value.replace(/\D/g, "").substring(0,16);
     e.target.value = value.replace(/(.{4})/g, "$1 ").trim();
 });
 
+// format expiry MM/YYYY
 document.getElementById("expiry").addEventListener("input", function (e) {
     let value = e.target.value.replace(/\D/g, "").substring(0,6);
     if (value.length >= 3) {
@@ -196,24 +191,40 @@ document.getElementById("expiry").addEventListener("input", function (e) {
 
 function validatePaymentForm() {
 
+    // CARD NUMBER
     let cardNumber = document.getElementById("card_number").value.replace(/\s/g, "");
     if (!/^\d{16}$/.test(cardNumber)) {
         alert("Card number must be 16 digits");
         return false;
     }
 
+    // NAME
     let cardHolder = document.getElementById("card_holder").value.trim();
     if (cardHolder.length < 3) {
         alert("Invalid card holder name");
         return false;
     }
 
+    // EXPIRY FORMAT
     let expiry = document.getElementById("expiry").value.trim();
     if (!/^(0[1-9]|1[0-2])\/\d{4}$/.test(expiry)) {
         alert("Expiry must be MM/YYYY");
         return false;
     }
 
+    // ✅ EXPIRY DATE CHECK (FIXED PART)
+    let [expMonth, expYear] = expiry.split("/").map(Number);
+
+    let now = new Date();
+    let currentMonth = now.getMonth() + 1;
+    let currentYear = now.getFullYear();
+
+    if (expYear < currentYear || (expYear === currentYear && expMonth < currentMonth)) {
+        alert("Card is expired");
+        return false;
+    }
+
+    // CVV
     let cvv = document.getElementById("cvv").value.trim();
     if (!/^\d{3}$/.test(cvv)) {
         alert("CVV must be 3 digits");
