@@ -2,11 +2,27 @@
 session_start();
 include "db.php";
 
-/* SECURITY CHECK */
+/* =========================
+   AUTHENTICATION + AUTHORIZATION
+========================= */
 if (!isset($_SESSION['user_id']) || !isset($_SESSION['role']) || $_SESSION['role'] != 'admin') {
     header("Location: menu.php");
     exit();
 }
+
+/* =========================
+   SESSION TIMEOUT (30 mins)
+========================= */
+$timeout = 600; // 30 minutes
+
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $timeout) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+
+$_SESSION['last_activity'] = time();
 ?>
 
 <!DOCTYPE html>
@@ -168,6 +184,12 @@ body{
         <p>Manage registered users</p>
         <a href="admin_users.php">Open</a>
     </div>
+    <div class="card">
+    <div class="icon">📊</div>
+    <h3>Login Logs</h3>
+    <p>View all login attempts (audit trail)</p>
+    <a href="admin_logs.php">Open</a>
+</div>
 
 </div>
 

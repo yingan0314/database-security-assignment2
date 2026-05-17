@@ -8,8 +8,9 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
     $u = $_POST['username'];
     $p = $_POST['password'];
+    $ip = $_SERVER['REMOTE_ADDR']; // 👈 NEW: get IP address
 
-    // SQL Server query (NO prepare / bind_param)
+    // SQL Server query
     $sql = "SELECT * FROM users WHERE username = ?";
     $params = [$u];
 
@@ -24,6 +25,12 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // verify hashed password
         if (password_verify($p, $row['password'])) {
 
+            // =========================
+            // LOGIN SUCCESS LOG
+            // =========================
+            $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'SUCCESS', ?)";
+            sqlsrv_query($conn, $log_sql, [$u, $ip]);
+
             $_SESSION['user_id'] = $row['user_id'];
             $_SESSION['role'] = $row['role'];
 
@@ -37,10 +44,24 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             }
 
         } else {
+
+            // =========================
+            // LOGIN FAILED LOG
+            // =========================
+            $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'FAILED', ?)";
+            sqlsrv_query($conn, $log_sql, [$u, $ip]);
+
             $msg = "❌ Wrong password";
         }
 
     } else {
+
+        // =========================
+        // USER NOT FOUND LOG
+        // =========================
+        $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'NOT_FOUND', ?)";
+        sqlsrv_query($conn, $log_sql, [$u, $ip]);
+
         $msg = "❌ User not found";
     }
 }

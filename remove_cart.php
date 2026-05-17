@@ -27,6 +27,6 @@ if ($stmt === false) {
 }
 
 /* 4️⃣ redirect back */
-header("Location: cart.php");
+header("Location: view_cart.php");
 exit();
 ?>

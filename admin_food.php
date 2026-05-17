@@ -1,7 +1,23 @@
 <?php
 session_start();
 include "db.php";
+session_start();
 
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
+
+$timeout = 600;
+
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
+
+$_SESSION['last_activity'] = time();
 /* =========================
    SECURITY CHECK
 ========================= */
@@ -112,6 +128,7 @@ if ($category == 'all') {
         [$category]
     );
 }
+
 ?>
 
 <!DOCTYPE html>
