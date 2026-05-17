@@ -58,21 +58,21 @@ body{
     border:1px solid #eee;
 }
 
-/* RIGHT PAYMENT */
+/* RIGHT PAYMENT (FIXED SIZE) */
 .payment{
-    width:380px;
+    width:340px;
     position:sticky;
     top:20px;
     background:#fff;
     border-radius:18px;
-    padding:25px;
+    padding:22px;
     box-shadow:0 10px 30px rgba(0,0,0,0.06);
     border:1px solid #eee;
 }
 
 /* HEADER */
 h1{
-    font-size:22px;
+    font-size:20px;
     margin:0 0 5px 0;
 }
 
@@ -99,28 +99,29 @@ h1{
     margin-top:20px;
     padding-top:15px;
     border-top:2px solid #f0f0f0;
-    font-size:22px;
+    font-size:20px;
     font-weight:600;
     color:#ff6b00;
     text-align:right;
 }
 
-/* INPUT STYLE */
+/* INPUT STYLE (FIXED) */
 label{
     font-size:12px;
     color:#666;
     display:block;
-    margin-top:12px;
+    margin-top:10px;
 }
 
 input, select{
     width:100%;
-    padding:12px 14px;
+    padding:9px 10px;
     margin-top:6px;
     border:1px solid #ddd;
-    border-radius:12px;
-    font-size:14px;
+    border-radius:10px;
+    font-size:13px;
     outline:none;
+    box-sizing:border-box;
     transition:0.2s;
 }
 
@@ -132,13 +133,13 @@ input:focus, select:focus{
 /* BUTTON */
 button{
     width:100%;
-    margin-top:22px;
-    padding:14px;
+    margin-top:18px;
+    padding:12px;
     border:none;
-    border-radius:14px;
+    border-radius:12px;
     background:linear-gradient(135deg,#ff6b00,#ff8c2a);
     color:white;
-    font-size:15px;
+    font-size:14px;
     font-weight:600;
     cursor:pointer;
     transition:0.25s;
@@ -147,7 +148,11 @@ button{
 
 button:hover{
     transform:translateY(-2px);
-    box-shadow:0 15px 25px rgba(255,107,0,0.25);
+}
+
+/* CARD NUMBER SPACING */
+#card_number{
+    letter-spacing:1px;
 }
 
 /* EMPTY */
@@ -259,7 +264,6 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 </div>
 
 <script>
-// formatting
 document.getElementById("card_number").addEventListener("input", e=>{
     let v = e.target.value.replace(/\D/g,"").substring(0,16);
     e.target.value = v.replace(/(.{4})/g,"$1 ").trim();
@@ -271,7 +275,6 @@ document.getElementById("expiry").addEventListener("input", e=>{
     e.target.value = v;
 });
 
-// validation
 function validatePaymentForm(){
     let card = document.getElementById("card_number").value.replace(/\s/g,"");
     if(!/^\d{16}$/.test(card)) return alert("Invalid card"), false;
