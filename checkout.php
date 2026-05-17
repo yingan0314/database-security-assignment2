@@ -18,6 +18,10 @@ WHERE c.user_id = ?
 
 $stmt = sqlsrv_query($conn, $sql, [$user_id]);
 
+if ($stmt === false) {
+    die(print_r(sqlsrv_errors(), true));
+}
+
 $total = 0;
 ?>
 
@@ -58,7 +62,7 @@ body{
     border:1px solid #eee;
 }
 
-/* RIGHT PAYMENT (FIXED SIZE) */
+/* RIGHT PAYMENT */
 .payment{
     width:340px;
     position:sticky;
@@ -105,7 +109,7 @@ h1{
     text-align:right;
 }
 
-/* INPUT STYLE (FIXED) */
+/* INPUT STYLE */
 label{
     font-size:12px;
     color:#666;
@@ -244,16 +248,16 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 </select>
 
 <label>Card Number</label>
-<input type="text" id="card_number" maxlength="19" required>
+<input type="text" name="card_number" id="card_number" maxlength="19" required>
 
 <label>Card Holder</label>
-<input type="text" id="card_holder" required>
+<input type="text" name="card_holder" id="card_holder" required>
 
 <label>Expiry (MM/YYYY)</label>
-<input type="text" id="expiry" maxlength="7" required>
+<input type="text" name="expiry" id="expiry" maxlength="7" required>
 
 <label>CVV</label>
-<input type="password" id="cvv" maxlength="3" required>
+<input type="password" name="cvv" id="cvv" maxlength="3" required>
 
 <button type="submit">Pay RM <?= number_format($total,2) ?></button>
 
@@ -264,17 +268,21 @@ while ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
 </div>
 
 <script>
+
+// format card number
 document.getElementById("card_number").addEventListener("input", e=>{
     let v = e.target.value.replace(/\D/g,"").substring(0,16);
     e.target.value = v.replace(/(.{4})/g,"$1 ").trim();
 });
 
+// format expiry
 document.getElementById("expiry").addEventListener("input", e=>{
     let v = e.target.value.replace(/\D/g,"").substring(0,6);
     if(v.length>=3) v = v.substring(0,2)+"/"+v.substring(2);
     e.target.value = v;
 });
 
+// validation
 function validatePaymentForm(){
     let card = document.getElementById("card_number").value.replace(/\s/g,"");
     if(!/^\d{16}$/.test(card)) return alert("Invalid card"), false;
@@ -290,6 +298,7 @@ function validatePaymentForm(){
 
     return true;
 }
+
 </script>
 
 </body>
