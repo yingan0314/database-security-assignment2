@@ -1,7 +1,19 @@
 <?php
 session_start();
 include "db.php";
+if (!isset($_SESSION['user_id'])) {
+    header("Location: login.php");
+    exit();
+}
 
+$timeout = 600;
+
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity'] > $timeout)) {
+    session_unset();
+    session_destroy();
+    header("Location: login.php");
+    exit();
+}
 /* SECURITY CHECK */
 if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
     header("Location: menu.php");
