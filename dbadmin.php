@@ -2,8 +2,8 @@
 
 $serverName = "192.168.0.55";
 $database = "food_ordering";
-$username = "webuser";   
-$password = 'Pa$$w0rd';    
+$username = "admin";  
+$password = 'Pa$$w0rd';   
 
 $conn = sqlsrv_connect($serverName, [
     "Database" => $database,

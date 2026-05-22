@@ -4,65 +4,106 @@ include "db.php";
 
 $msg = "";
 
+// GET USER IP
+$ip = $_SERVER['REMOTE_ADDR'];
+
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
-    $u = $_POST['username'];
+    // 1️⃣ INPUT VALIDATION
+    $u = trim($_POST['username']);
     $p = $_POST['password'];
-    $ip = $_SERVER['REMOTE_ADDR']; // 👈 NEW: get IP address
 
-    // SQL Server query
-    $sql = "SELECT * FROM users WHERE username = ?";
-    $params = [$u];
+    if (empty($u) || empty($p)) {
 
-    $stmt = sqlsrv_query($conn, $sql, $params);
+        $msg = "❌ Fields cannot be empty";
 
-    if ($stmt === false) {
-        die(print_r(sqlsrv_errors(), true));
-    }
+    } elseif (!preg_match("/^[a-zA-Z0-9_]+$/", $u)) {
 
-    if ($row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC)) {
+        $msg = "❌ Invalid username format";
 
-        // verify hashed password
-        if (password_verify($p, $row['password'])) {
+    } else {
 
-            // =========================
-            // LOGIN SUCCESS LOG
-            // =========================
-            $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'SUCCESS', ?)";
-            sqlsrv_query($conn, $log_sql, [$u, $ip]);
+        // 2️⃣ PARAMETERIZED QUERY (SQL INJECTION PROTECTION)
+        $sql = "SELECT * FROM users WHERE username = ?";
+        $params = [$u];
 
-            $_SESSION['user_id'] = $row['user_id'];
-            $_SESSION['role'] = $row['role'];
+        $stmt = sqlsrv_query($conn, $sql, $params);
 
-            // role redirect
-            if ($row['role'] == "admin") {
-                header("Location: admin.php");
-                exit();
+        if ($stmt === false) {
+            die(print_r(sqlsrv_errors(), true));
+        }
+
+        $row = sqlsrv_fetch_array($stmt, SQLSRV_FETCH_ASSOC);
+
+        // 3️⃣ CHECK USER
+        if ($row) {
+
+            // 4️⃣ PASSWORD VERIFICATION (HASH)
+            if (password_verify($p, $row['password'])) {
+
+                // =========================
+                // LOGIN SUCCESS LOG
+                // =========================
+                $logSql = "INSERT INTO login_logs(username, status, ip_address)
+                           VALUES (?, ?, ?)";
+
+                $logParams = [$u, "SUCCESS", $ip];
+
+                $logStmt = sqlsrv_query($conn, $logSql, $logParams);
+
+                if ($logStmt === false) {
+                    die(print_r(sqlsrv_errors(), true));
+                }
+
+                // 5️⃣ SESSION SECURITY
+                session_regenerate_id(true);
+
+                $_SESSION['user_id'] = $row['user_id'];
+                $_SESSION['role'] = $row['role'];
+                $_SESSION['username'] = $row['username'];
+                $_SESSION['last_activity'] = time();
+
+                // 6️⃣ ROLE-BASED REDIRECT
+                if ($row['role'] == "admin") {
+
+                    header("Location: admin.php");
+                    exit();
+
+                } else {
+
+                    header("Location: menu.php");
+                    exit();
+                }
+
             } else {
-                header("Location: menu.php");
-                exit();
+
+                // =========================
+                // WRONG PASSWORD LOG
+                // =========================
+                $logSql = "INSERT INTO login_logs(username, status, ip_address)
+                           VALUES (?, ?, ?)";
+
+                $logParams = [$u, "FAILED", $ip];
+
+                sqlsrv_query($conn, $logSql, $logParams);
+
+                $msg = "❌ Wrong password";
             }
 
         } else {
 
             // =========================
-            // LOGIN FAILED LOG
+            // USER NOT FOUND LOG
             // =========================
-            $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'FAILED', ?)";
-            sqlsrv_query($conn, $log_sql, [$u, $ip]);
+            $logSql = "INSERT INTO login_logs(username, status, ip_address)
+                       VALUES (?, ?, ?)";
 
-            $msg = "❌ Wrong password";
+            $logParams = [$u, "NOT_FOUND", $ip];
+
+            sqlsrv_query($conn, $logSql, $logParams);
+
+            $msg = "❌ User not found";
         }
-
-    } else {
-
-        // =========================
-        // USER NOT FOUND LOG
-        // =========================
-        $log_sql = "INSERT INTO login_logs (username, status, ip_address) VALUES (?, 'NOT_FOUND', ?)";
-        sqlsrv_query($conn, $log_sql, [$u, $ip]);
-
-        $msg = "❌ User not found";
     }
 }
 ?>
@@ -128,10 +169,26 @@ button {
     color: white;
 }
 
+button:hover {
+    background: #ff3742;
+}
+
 .msg {
     margin-top: 10px;
     font-size: 13px;
     color: red;
+}
+
+a {
+    display: block;
+    margin-top: 10px;
+    text-decoration: none;
+    color: #ff4757;
+    font-size: 14px;
+}
+
+.back {
+    margin-top: 5px;
 }
 </style>
 </head>
@@ -151,7 +208,11 @@ button {
     <a href="register.php">No account? Register</a>
     <a class="back" href="index.php">⬅ Back to Home</a>
 
-    <?php if ($msg != "") echo "<div class='msg'>$msg</div>"; ?>
+    <?php
+    if ($msg != "") {
+        echo "<div class='msg'>$msg</div>";
+    }
+    ?>
 
 </div>
 
