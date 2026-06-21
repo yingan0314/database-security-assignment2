@@ -1,30 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Food Ordering System - Secure AWS Architecture (Assignment 2)'
+Description: 'Food Ordering System - Secure AWS Architecture'
 
-# ============================================
-# PARAMETERS
-# ============================================
 Parameters:
   DBPassword:
     Type: String
     NoEcho: true
     Default: Admin123456!
-    Description: RDS Master Password
-    MinLength: 8
-
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
     Default: assignment-key
-    Description: EC2 Key Pair Name
 
-# ============================================
-# RESOURCES
-# ============================================
 Resources:
-
-  # ============================================
-  # VPC
-  # ============================================
   AppVPC:
     Type: AWS::EC2::VPC
     Properties:
@@ -35,15 +21,8 @@ Resources:
         - Key: Name
           Value: FoodOrdering-VPC
 
-  # ============================================
-  # INTERNET GATEWAY
-  # ============================================
   InternetGateway:
     Type: AWS::EC2::InternetGateway
-    Properties:
-      Tags:
-        - Key: Name
-          Value: FoodOrdering-IGW
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
@@ -51,10 +30,7 @@ Resources:
       VpcId: !Ref AppVPC
       InternetGatewayId: !Ref InternetGateway
 
-  # ============================================
-  # PUBLIC SUBNET (Web Tier)
-  # ============================================
-  PublicSubnet1:
+  PublicSubnet:
     Type: AWS::EC2::Subnet
     Properties:
       VpcId: !Ref AppVPC
@@ -63,11 +39,8 @@ Resources:
       MapPublicIpOnLaunch: true
       Tags:
         - Key: Name
-          Value: Public-Subnet-Web
+          Value: Public-Subnet
 
-  # ============================================
-  # PRIVATE SUBNETS (Database Tier)
-  # ============================================
   PrivateSubnet1:
     Type: AWS::EC2::Subnet
     Properties:
@@ -76,7 +49,7 @@ Resources:
       AvailabilityZone: !Select [0, !GetAZs '']
       Tags:
         - Key: Name
-          Value: Private-Subnet-DB-1
+          Value: Private-Subnet-1
 
   PrivateSubnet2:
     Type: AWS::EC2::Subnet
@@ -86,11 +59,8 @@ Resources:
       AvailabilityZone: !Select [1, !GetAZs '']
       Tags:
         - Key: Name
-          Value: Private-Subnet-DB-2
+          Value: Private-Subnet-2
 
-  # ============================================
-  # DB SUBNET GROUP
-  # ============================================
   DBSubnetGroup:
     Type: AWS::RDS::DBSubnetGroup
     Properties:
@@ -99,16 +69,10 @@ Resources:
         - !Ref PrivateSubnet1
         - !Ref PrivateSubnet2
 
-  # ============================================
-  # ROUTE TABLE (Public)
-  # ============================================
   PublicRouteTable:
     Type: AWS::EC2::RouteTable
     Properties:
       VpcId: !Ref AppVPC
-      Tags:
-        - Key: Name
-          Value: Public-RouteTable
 
   PublicRoute:
     Type: AWS::EC2::Route
@@ -120,88 +84,74 @@ Resources:
   PublicSubnetRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties:
-      SubnetId: !Ref PublicSubnet1
+      SubnetId: !Ref PublicSubnet
       RouteTableId: !Ref PublicRouteTable
 
-  # ============================================
-  # SECURITY GROUP - EC2 (Web Server)
-  # ============================================
   WebSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow HTTP/HTTPS/SSH to Web Server
+      GroupDescription: Allow HTTP and SSH
       VpcId: !Ref AppVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 80
           ToPort: 80
           CidrIp: 0.0.0.0/0
-          Description: HTTP from anywhere
         - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
-          Description: SSH from anywhere
       Tags:
         - Key: Name
           Value: WebServer-SG
 
-  # ============================================
-  # SECURITY GROUP - RDS (Database)
-  # ============================================
   DatabaseSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Allow MySQL from Web Server only
+      GroupDescription: MySQL access
       VpcId: !Ref AppVPC
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 3306
           ToPort: 3306
           SourceSecurityGroupId: !Ref WebSecurityGroup
-          Description: MySQL from Web Server
       Tags:
         - Key: Name
           Value: Database-SG
 
-  # ============================================
-  # EC2 INSTANCE (Web Server)
-  # ============================================
   WebServer:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: t2.micro
       KeyName: !Ref KeyName
-      SubnetId: !Ref PublicSubnet1
+      SubnetId: !Ref PublicSubnet
       SecurityGroupIds:
         - !Ref WebSecurityGroup
-      ImageId: ami-0c02fb55956c7d316  # Amazon Linux 2023 (us-east-1)
+      ImageId: ami-0c02fb55956c7d316
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
             VolumeSize: 20
             VolumeType: gp3
-            UserData:
-        Fn::Base64: !Sub |
-          #!/bin/bash
-          yum update -y
-          yum install -y httpd php php-mysqli php-json git mariadb105
-          systemctl start httpd
-          systemctl enable httpd
-          cd /var/www/html
-          rm -rf *
-          git clone https://github.com/yingan0314/database-security-assignment2.git .
-          cp -r app/* .
-          rm -rf app
-          chown -R apache:apache /var/www/html
-          chmod -R 755 /var/www/html
+      UserData:
+        Fn::Base64:
+          !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd php php-mysqli php-json git mariadb105
+            systemctl start httpd
+            systemctl enable httpd
+            cd /var/www/html
+            rm -rf *
+            git clone https://github.com/yingan0314/database-security-assignment2.git .
+            cp -r app/* .
+            rm -rf app
+            chown -R apache:apache /var/www/html
+            chmod -R 755 /var/www/html
       Tags:
         - Key: Name
           Value: FoodOrdering-WebServer
 
-  # ============================================
-  # RDS INSTANCE (MySQL Database)
-  # ============================================
   Database:
     Type: AWS::RDS::DBInstance
     Properties:
@@ -218,48 +168,15 @@ Resources:
         - !Ref DatabaseSecurityGroup
       DBSubnetGroupName: !Ref DBSubnetGroup
       PubliclyAccessible: false
-      MultiAZ: false
       BackupRetentionPeriod: 7
-      EnableCloudwatchLogsExports:
-        - error
-        - audit
       Tags:
         - Key: Name
           Value: FoodOrdering-RDS
 
-  # ============================================
-  # IAM ROLE for EC2 (CloudWatch Logs)
-  # ============================================
-  EC2Role:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Principal:
-              Service: ec2.amazonaws.com
-            Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
-      Tags:
-        - Key: Name
-          Value: EC2-CloudWatch-Role
-
-  EC2InstanceProfile:
-    Type: AWS::IAM::InstanceProfile
-    Properties:
-      Roles:
-        - !Ref EC2Role
-
-# ============================================
-# OUTPUTS
-# ============================================
 Outputs:
   WebsiteURL:
     Description: Web Application URL
     Value: !Sub http://${WebServer.PublicIp}/
-
   RDSEndpoint:
-    Description: RDS Database Endpoint
+    Description: RDS Endpoint
     Value: !GetAtt Database.Endpoint.Address
