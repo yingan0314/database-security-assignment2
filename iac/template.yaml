@@ -181,7 +181,7 @@ Resources:
           Ebs:
             VolumeSize: 20
             VolumeType: gp3
-      UserData:
+            UserData:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
@@ -195,9 +195,6 @@ Resources:
           rm -rf app
           chown -R apache:apache /var/www/html
           chmod -R 755 /var/www/html
-          sed -i "s/localhost/${RDSHost}/g" /var/www/html/db.php
-          sed -i "s/root/admin/g" /var/www/html/db.php
-          sed -i "s/\"\"/\"${DBPassword}\"/g" /var/www/html/db.php
       Tags:
         - Key: Name
           Value: FoodOrdering-WebServer
