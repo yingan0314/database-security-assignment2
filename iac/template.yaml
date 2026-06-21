@@ -152,10 +152,10 @@ Resources:
         - Key: Name
           Value: FoodOrdering-WebServer
 
-  Database:
+    Database:
     Type: AWS::RDS::DBInstance
     Properties:
-      DBInstanceIdentifier: fooddb
+      DBInstanceIdentifier: fooddb-cfn
       Engine: mysql
       EngineVersion: '8.0'
       DBInstanceClass: db.t3.micro
