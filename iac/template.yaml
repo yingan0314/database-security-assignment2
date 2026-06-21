@@ -152,7 +152,7 @@ Resources:
         - Key: Name
           Value: FoodOrdering-WebServer
 
-    Database:
+  Database:
     Type: AWS::RDS::DBInstance
     Properties:
       DBInstanceIdentifier: fooddb-cfn
