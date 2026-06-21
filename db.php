@@ -1,5 +1,5 @@
 <?php
-$host = "fooddb.c5wrdb9jzsez.us-east-1.rds.amazonaws.com";
+$host = "localhost";
 $database = "fooddb";
 $username = "admin";
 $password = "Admin123456!";
