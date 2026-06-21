@@ -135,7 +135,7 @@ Resources:
             VolumeType: gp3
       UserData:
         Fn::Base64:
-          !Sub |
+          Fn::Sub: |
             #!/bin/bash
             yum update -y
             yum install -y httpd php php-mysqli php-json git mariadb105
