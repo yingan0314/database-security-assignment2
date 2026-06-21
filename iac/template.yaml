@@ -157,7 +157,7 @@ Resources:
     Properties:
       DBInstanceIdentifier: fooddb-cfn
       Engine: mysql
-      EngineVersion: '8.0'
+      EngineVersion: '8.4'
       DBInstanceClass: db.t3.micro
       AllocatedStorage: '20'
       StorageType: gp2
