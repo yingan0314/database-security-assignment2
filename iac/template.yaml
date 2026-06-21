@@ -152,7 +152,7 @@ Resources:
         - Key: Name
           Value: FoodOrdering-WebServer
 
-  Database:
+  FoodDB:
     Type: AWS::RDS::DBInstance
     Properties:
       DBInstanceIdentifier: fooddb-cfn
@@ -179,4 +179,4 @@ Outputs:
     Value: !Sub http://${WebServer.PublicIp}/
   RDSEndpoint:
     Description: RDS Endpoint
-    Value: !GetAtt Database.Endpoint.Address
+    Value: !GetAtt FoodDB.Endpoint.Address
