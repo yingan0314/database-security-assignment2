@@ -151,7 +151,6 @@ Resources:
               -subj "/C=MY/ST=Kuala Lumpur/L=Cyberjaya/O=MMU/CN=localhost"
             
             # Configure Apache for SSL
-            echo "Listen 443" >> /etc/httpd/conf/httpd.conf
             
             systemctl start httpd
             systemctl enable httpd
