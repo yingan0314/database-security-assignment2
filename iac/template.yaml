@@ -137,34 +137,70 @@ Resources:
           Ebs:
             VolumeSize: 20
             VolumeType: gp3
+
       UserData:
         Fn::Base64:
           Fn::Sub: |
             #!/bin/bash
-            yum update -y
-            yum install -y httpd php php-mysqli php-json git mariadb105 mod_ssl
+            set -x
+            exec > /var/log/userdata.log 2>&1
             
-            # Generate self-signed SSL certificate
+            # Update and install packages
+            yum update -y
+            yum install -y httpd php php-mysqli php-json git mod_ssl mariadb
+            
+            # Upgrade PHP to 8.0
+            amazon-linux-extras enable php8.0
+            yum clean metadata
+            yum install -y php php-mysqlnd
+            
+            # Generate SSL certificate
             openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
               -keyout /etc/pki/tls/private/localhost.key \
               -out /etc/pki/tls/certs/localhost.crt \
               -subj "/C=MY/ST=Kuala Lumpur/L=Cyberjaya/O=MMU/CN=localhost"
             
-            # Configure Apache for SSL
-            
+            # Start Apache
             systemctl start httpd
             systemctl enable httpd
+            
+            # Deploy application from GitHub
             cd /var/www/html
             rm -rf *
             git clone https://github.com/yingan0314/database-security-assignment2.git .
-            cp -r app/* .
-            rm -rf app
+            cp -r app/* . 2>/dev/null
+            rm -rf app 2>/dev/null
+            
+            # Configure database connection
+            cat > /var/www/html/db.php << DBPHP
+            <?php
+            \$host = "${FoodDB.Endpoint.Address}";
+            \$database = "fooddb";
+            \$username = "admin";
+            \$password = "${DBPassword}";
+            \$conn = new mysqli(\$host, \$username, \$password, \$database);
+            if (\$conn->connect_error) {
+                die("Connection failed: " . \$conn->connect_error);
+            }
+            \$conn->set_charset("utf8");
+            ?>
+            DBPHP
+            
+            cp /var/www/html/db.php /var/www/html/dbadmin.php
+            
+            # Wait for RDS to be ready
+            sleep 60
+            
+            # Import database
+            cd /var/www/html/sql
+            mysql -h ${FoodDB.Endpoint.Address} -u admin -p${DBPassword} fooddb < init.sql 2>/dev/null
+            
+            # Set permissions
             chown -R apache:apache /var/www/html
             chmod -R 755 /var/www/html
+            
+            # Restart Apache
             systemctl restart httpd
-      Tags:
-        - Key: Name
-          Value: FoodOrdering-WebServer
 
   FoodDB:
     Type: AWS::RDS::DBInstance
