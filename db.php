@@ -1,5 +1,5 @@
 <?php
-$host = "fooddb-cfn.cjiolfzxsqp0.us-east-1.rds.amazonaws.com";
+$host = "place your RDSEndpoint";
 $database = "fooddb";
 $username = "admin";
 $password = "Admin123456!";
