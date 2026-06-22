@@ -143,7 +143,17 @@ Resources:
           Fn::Sub: |
             #!/bin/bash
             yum update -y
-            yum install -y httpd php php-mysqli php-json git mariadb105
+            yum install -y httpd php php-mysqli php-json git mariadb105 mod_ssl
+            
+            # Generate self-signed SSL certificate
+            openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+              -keyout /etc/pki/tls/private/localhost.key \
+              -out /etc/pki/tls/certs/localhost.crt \
+              -subj "/C=MY/ST=Kuala Lumpur/L=Cyberjaya/O=MMU/CN=localhost"
+            
+            # Configure Apache for SSL
+            echo "Listen 443" >> /etc/httpd/conf/httpd.conf
+            
             systemctl start httpd
             systemctl enable httpd
             cd /var/www/html
@@ -153,6 +163,7 @@ Resources:
             rm -rf app
             chown -R apache:apache /var/www/html
             chmod -R 755 /var/www/html
+            systemctl restart httpd
       Tags:
         - Key: Name
           Value: FoodOrdering-WebServer
