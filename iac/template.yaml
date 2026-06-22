@@ -128,6 +128,7 @@ Resources:
       SecurityGroupIds:
         - !Ref WebSecurityGroup
       ImageId: ami-0c02fb55956c7d316
+      IamInstanceProfile: !Ref WebServerInstanceProfile
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
           Ebs:
@@ -173,6 +174,40 @@ Resources:
       Tags:
         - Key: Name
           Value: FoodOrdering-RDS
+  WebServerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Policies:
+        - PolicyName: LeastPrivilegePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - rds:DescribeDBInstances
+                  - cloudwatch:PutMetricData
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+      Tags:
+        - Key: Name
+          Value: WebServer-LeastPrivilege-Role
+
+  WebServerInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref WebServerRole
 
 Outputs:
   WebsiteURL:
