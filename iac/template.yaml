@@ -161,6 +161,7 @@ Resources:
       DBInstanceClass: db.t3.micro
       AllocatedStorage: '20'
       StorageType: gp2
+      StorageEncrypted: true
       MasterUsername: admin
       MasterUserPassword: !Ref DBPassword
       DBName: fooddb
