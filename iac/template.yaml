@@ -5,10 +5,10 @@ Parameters:
   DBPassword:
     Type: String
     NoEcho: true
-    Default: Admin123456!
+    Description: "Database password (must be provided during stack creation)"
   KeyName:
     Type: AWS::EC2::KeyPair::KeyName
-    Default: assignment-key
+    Description: SSH key pair for secure EC2 access
 
 Resources:
   AppVPC:
@@ -98,6 +98,10 @@ Resources:
           ToPort: 80
           CidrIp: 0.0.0.0/0
         - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
           FromPort: 22
           ToPort: 22
           CidrIp: 0.0.0.0/0
@@ -174,6 +178,26 @@ Resources:
       Tags:
         - Key: Name
           Value: FoodOrdering-RDS
+
+  BackupBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub food-ordering-backup-${AWS::AccountId}
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: Name
+          Value: FoodOrdering-Backup
+
   WebServerRole:
     Type: AWS::IAM::Role
     Properties:
@@ -216,3 +240,9 @@ Outputs:
   RDSEndpoint:
     Description: RDS Endpoint
     Value: !GetAtt FoodDB.Endpoint.Address
+  BackupBucketName:
+    Description: S3 Backup Bucket
+    Value: !Ref BackupBucket
+  WebsiteURLSecure:
+    Description: Secure Web Application URL
+    Value: !Sub https://${WebServer.PublicIp}/
