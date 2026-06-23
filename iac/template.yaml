@@ -350,6 +350,7 @@ Resources:
       AllocatedStorage: '20'
       StorageType: gp2
       StorageEncrypted: true
+      MultiAZ: true
       MasterUsername: admin
       MasterUserPassword: !Ref DBPassword
       DBName: fooddb
