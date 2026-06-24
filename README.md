@@ -19,5 +19,5 @@ After create complete
 Wait about 5++ minute
 ------------------------------------------------------------------------------
 
-5. Open website
+5. Open website: 
 admin | password
